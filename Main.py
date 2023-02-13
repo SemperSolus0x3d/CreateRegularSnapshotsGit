@@ -70,17 +70,14 @@ class Program:
 
 
     def _OnAnyEvent(self, event):
-        if self._ShouldBeIgnored(event.src_path):
-            return
+        if not self._ShouldBeIgnored(event.src_path):
+            self._GitService.AddFiles(event.src_path)
+            self._FilesChanged = True
 
         if isinstance(event, (DirMovedEvent, FileMovedEvent)):
-            if self._ShouldBeIgnored(event.dest_path):
-                return
-
-            self._GitService.AddFiles(event.dest_path)
-
-        self._GitService.AddFiles(event.src_path)
-        self._FilesChanged = True
+            if not self._ShouldBeIgnored(event.dest_path):
+                self._GitService.AddFiles(event.dest_path)
+                self._FilesChanged = True
 
 
 if __name__ == '__main__':
