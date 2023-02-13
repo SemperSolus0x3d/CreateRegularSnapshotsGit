@@ -9,29 +9,38 @@ class GitService:
 
 
     def AddFiles(self, *files):
-        self._EnsureRepoExists()
-        self._TryCallGit([
-            'add', *files
-        ])
+        with self._Lock:
+            self._EnsureRepoExists()
+            self._TryCallGit([
+                'add', *files
+            ])
 
 
     def Commit(self, message=None):
-        self._EnsureRepoExists()
-        self._CallGit([
-            'commit', '-m', self._GetCommitMessage(message)
-        ])
+        with self._Lock:
+            self._EnsureRepoExists()
+
+            if self._CheckForStagedChanges():
+                self._CallGit([
+                    'commit', '-m', self._GetCommitMessage(message)
+                ])
+
+                print('Created snapshot')
 
 
     def _CallGit(self, args: list[str]):
-        if not self._TryCallGit(args):
+        if self._TryCallGit(args) != 0:
             raise Exception('Git call failed')
 
 
-    def _TryCallGit(self, args: list[str]) -> bool:
-        with self._Lock:
-            returncode = sp.Popen(['git', *args]).wait()
+    def _TryCallGit(self, args: list[str]) -> int:
+        return sp.Popen(['git', *args]).wait()
 
-            return returncode == 0
+
+    def _CheckForStagedChanges(self) -> bool:
+        return self._TryCallGit([
+            'diff', '--staged', '--exit-code', '--color-words'
+        ]) == 1
 
 
     def _GetCommitMessage(self, message=None):

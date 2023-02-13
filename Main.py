@@ -38,7 +38,6 @@ class Program:
                 if self._FilesChanged:
                     self._GitService.Commit()
                     self._FilesChanged = False
-                    print('Created snapshot')
 
                 time.sleep(config.Interval)
         except Exception:
