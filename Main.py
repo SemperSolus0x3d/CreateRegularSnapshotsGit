@@ -10,11 +10,13 @@ from watchdog.events import (
 
 from ConfigService import ConfigService
 from GitService import GitService
+from IgnoreService import IgnoreService
 
 class Program:
     def __init__(self):
         self._ConfigService = ConfigService()
         self._GitService = GitService()
+        self._IgnoreService = IgnoreService()
         self._FilesChanged = False
 
 
@@ -49,10 +51,11 @@ class Program:
 
     def _GetEventHandler(self):
         config = self._ConfigService.GetConfig()
+        ignorePatterns = self._IgnoreService.GetIgnorePatterns()
 
         eventHandler = PatternMatchingEventHandler(
             config.Patterns,
-            config.IgnorePatterns
+            ignorePatterns
         )
 
         eventHandler.on_any_event = lambda e: self._OnAnyEvent(e)
@@ -61,9 +64,9 @@ class Program:
 
 
     def _ShouldBeIgnored(self, file) -> bool:
-        config = self._ConfigService.GetConfig()
+        patterns = self._IgnoreService.GetIgnorePatterns()
 
-        return any((fnmatch(file, x) for x in config.IgnorePatterns))
+        return any((fnmatch(file, x) for x in patterns))
 
 
     def _OnAnyEvent(self, event):

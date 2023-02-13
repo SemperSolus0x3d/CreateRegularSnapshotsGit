@@ -24,7 +24,6 @@ class ConfigService:
         self._ReadConfig(_CONFIG_FILE_NAME)
         self._ValidateConfig()
         self._ParseConfig()
-        self._IgnoreGitFolder()
 
     def _ReadConfig(self, filename):
         try:
@@ -36,8 +35,7 @@ class ConfigService:
         self._ParseInterval()
 
         keys = [
-            'Patterns',
-            'IgnorePatterns'
+            'Patterns'
         ]
 
         for k in keys:
@@ -73,10 +71,3 @@ class ConfigService:
         match = re.search(rf'([0-9.]+){component}', interval_str)
 
         return float(match.group(1)) if match is not None else 0.
-
-
-    def _IgnoreGitFolder(self):
-        pattern = f'.git'
-        
-        if not pattern in self._Config.IgnorePatterns:
-            self._Config.IgnorePatterns.append(pattern)
