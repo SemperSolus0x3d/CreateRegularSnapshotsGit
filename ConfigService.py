@@ -1,5 +1,6 @@
 import re
 import toml
+import os
 
 from Config import Config
 
@@ -22,14 +23,15 @@ class ConfigService:
         self._RawConfig = {}
 
         self._ReadConfig(_CONFIG_FILE_NAME)
-        self._ValidateConfig()
-        self._ParseConfig()
+
+        if len(self._RawConfig.keys()) != 0:
+            self._ValidateConfig()
+            self._ParseConfig()
 
     def _ReadConfig(self, filename):
-        try:
+        if os.path.exists(filename):
             self._RawConfig = toml.load(filename)
-        except FileNotFoundError as ex:
-            raise RuntimeError(f'Config file "{filename}" not found') from ex
+
 
     def _ParseConfig(self):
         self._ParseInterval()
