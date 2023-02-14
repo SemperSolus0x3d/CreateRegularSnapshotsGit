@@ -22,6 +22,7 @@ class Program:
 
     def Main(self):
         self._GitService.AddFiles('.')
+        self._FilesChanged = True
 
         config = self._ConfigService.GetConfig()
         eventHandler = self._GetEventHandler()
