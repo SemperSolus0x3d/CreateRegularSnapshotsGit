@@ -50,11 +50,10 @@ class Program:
 
 
     def _GetEventHandler(self):
-        config = self._ConfigService.GetConfig()
         ignorePatterns = self._IgnoreService.GetIgnorePatterns()
 
         eventHandler = PatternMatchingEventHandler(
-            config.Patterns,
+            None,
             ignorePatterns
         )
 

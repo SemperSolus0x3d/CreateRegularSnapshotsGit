@@ -34,9 +34,7 @@ class ConfigService:
     def _ParseConfig(self):
         self._ParseInterval()
 
-        keys = [
-            'Patterns'
-        ]
+        keys = []
 
         for k in keys:
             if k in self._RawConfig:

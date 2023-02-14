@@ -1,6 +1,2 @@
 # String in format "1s2m3h"
 Interval = "1s" # 1 second
-
-Patterns = [
-    '*.docx'
-]
