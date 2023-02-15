@@ -1,9 +1,8 @@
 import time
-from fnmatch import fnmatch
 
+import inject
 from watchdog.observers import Observer
 from watchdog.events import (
-    PatternMatchingEventHandler,
     DirMovedEvent,
     FileMovedEvent
 )
@@ -11,12 +10,19 @@ from watchdog.events import (
 from ConfigService import ConfigService
 from GitService import GitService
 from IgnoreService import IgnoreService
+from CustomEventHandler import CustomEventHandler
 
 class Program:
-    def __init__(self):
-        self._ConfigService = ConfigService()
-        self._GitService = GitService()
-        self._IgnoreService = IgnoreService()
+    @inject.autoparams()
+    def __init__(
+        self,
+        configService: ConfigService,
+        gitService: GitService,
+        ignoreService: IgnoreService
+    ):
+        self._ConfigService = configService
+        self._GitService = gitService
+        self._IgnoreService = ignoreService
         self._FilesChanged = False
 
 
@@ -51,37 +57,25 @@ class Program:
 
 
     def _GetEventHandler(self):
-        ignorePatterns = self._IgnoreService.GetIgnorePatterns()
-
-        eventHandler = PatternMatchingEventHandler(
-            None,
-            ignorePatterns
-        )
-
+        eventHandler = CustomEventHandler()
         eventHandler.on_any_event = lambda e: self._OnAnyEvent(e)
 
         return eventHandler
 
-
-    def _ShouldBeIgnored(self, file) -> bool:
-        patterns = self._IgnoreService.GetIgnorePatterns()
-
-        return any((fnmatch(file, x) for x in patterns))
-
-
     def _OnAnyEvent(self, event):
-        if not self._ShouldBeIgnored(event.src_path):
+        if not self._IgnoreService.ShouldBeIgnored(event.src_path):
             self._GitService.AddFiles(event.src_path)
             self._FilesChanged = True
 
         if isinstance(event, (DirMovedEvent, FileMovedEvent)):
-            if not self._ShouldBeIgnored(event.dest_path):
+            if not self._IgnoreService.ShouldBeIgnored(event.dest_path):
                 self._GitService.AddFiles(event.dest_path)
                 self._FilesChanged = True
 
 
 if __name__ == '__main__':
     try:
+        inject.configure()
         Program().Main()
     except KeyboardInterrupt:
         print('Ctrl+C received. Exiting gracefully')

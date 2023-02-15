@@ -1,39 +1,55 @@
 import os
+from fnmatch import fnmatchcase
+import platform
 
 class IgnoreService:
     def __init__(self):
         self._IgnorePatterns = None
+        self._ForceIncludePatterns = None
+        self._GitDirPattern = self._AdaptPatternToCurrentPlatform('./.git/**')
 
-    def GetIgnorePatterns(self):
-        if self._IgnorePatterns is None:
-            self.RefreshIgnorePatterns()
-
-        return self._IgnorePatterns
-
-    def RefreshIgnorePatterns(self):
-        self._IgnorePatterns = self._GetIgnorePatternsForGitDir()
+    def RefreshPatterns(self):
+        self._IgnorePatterns = []
+        self._ForceIncludePatterns = []
 
         if os.path.exists('.gitignore'):
             with open('.gitignore', 'r', encoding='utf-8') as f:
-                self._IgnorePatterns.extend((x.removesuffix('\n') for x in f.readlines()))
+                allPatterns = [x.removesuffix('\n') for x in f.readlines()]
+
+            self._IgnorePatterns = [
+                self._AdaptPatternToCurrentPlatform(x) for x in allPatterns
+                if not x.startswith('!')
+            ]
+
+            self._ForceIncludePatterns = [
+                self._AdaptPatternToCurrentPlatform(x.removeprefix('!'))
+                for x in allPatterns
+                if x.startswith('!')
+            ]
 
 
-    def _GetIgnorePatternsForGitDir(self):
-        # Watchdog uses pathlib.PurePath.match(),
-        # which doesn't support ** in patterns, so
-        # we have to use a dirty hack like this
-        # to ignore .git folder
+    def ShouldBeIgnored(self, path):
+        self._RefreshPatternsIfNeeded()
 
-        MAX_GIT_DIR_DEPTH = 10
+        if path == '.\\.git' or path == './.git':
+            return True
 
-        patterns = []
+        if fnmatchcase(path, self._GitDirPattern):
+            return True
 
-        for i in range(MAX_GIT_DIR_DEPTH):
-            pattern = '.git'
+        if any((fnmatchcase(path, x) for x in self._ForceIncludePatterns)):
+            return False
 
-            for _ in range(i):
-                pattern = os.path.join(pattern, '*')
+        return any((fnmatchcase(path, x) for x in self._IgnorePatterns))
 
-            patterns.append(pattern)
 
-        return patterns
+    def _RefreshPatternsIfNeeded(self):
+        if (
+            self._IgnorePatterns is None or
+            self._ForceIncludePatterns is None
+        ):
+            self.RefreshPatterns()
+
+    def _AdaptPatternToCurrentPlatform(self, pattern: str):
+        if platform.system() == 'Windows':
+            return pattern.replace('/', '\\')
