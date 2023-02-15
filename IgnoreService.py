@@ -53,3 +53,5 @@ class IgnoreService:
     def _AdaptPatternToCurrentPlatform(self, pattern: str):
         if platform.system() == 'Windows':
             return pattern.replace('/', '\\')
+        else:
+            return pattern
