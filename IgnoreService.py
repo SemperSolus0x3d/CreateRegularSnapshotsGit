@@ -14,18 +14,18 @@ class IgnoreService:
 
         if os.path.exists('.gitignore'):
             with open('.gitignore', 'r', encoding='utf-8') as f:
-                allPatterns = [x.removesuffix('\n') for x in f.readlines()]
+                allPatterns = (x.removesuffix('\n') for x in f.readlines())
 
-            self._IgnorePatterns = [
-                self._AdaptPatternToCurrentPlatform(x) for x in allPatterns
+            self._IgnorePatterns = self._TransformPatterns((
+                x for x in allPatterns
                 if not x.startswith('!')
-            ]
+            ))
 
-            self._ForceIncludePatterns = [
-                self._AdaptPatternToCurrentPlatform(x.removeprefix('!'))
+            self._ForceIncludePatterns = self._TransformPatterns((
+                x.removeprefix('!')
                 for x in allPatterns
                 if x.startswith('!')
-            ]
+            ))
 
 
     def ShouldBeIgnored(self, path):
@@ -55,3 +55,15 @@ class IgnoreService:
             return pattern.replace('/', '\\')
         else:
             return pattern
+
+    def _AddPrefixToPattern(self, pattern: str):
+        if not pattern.startswith('./'):
+            return './' + pattern
+        else:
+            return pattern
+
+    def _TransformPatterns(self, patterns):
+        withPrefix = (self._AddPrefixToPattern(x) for x in patterns)
+        adapted = (self._AdaptPatternToCurrentPlatform(x) for x in withPrefix)
+
+        return list(adapted)
