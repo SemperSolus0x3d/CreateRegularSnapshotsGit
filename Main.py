@@ -1,4 +1,5 @@
 import time
+import os
 
 import inject
 from watchdog.observers import Observer
@@ -63,6 +64,9 @@ class Program:
         return eventHandler
 
     def _OnAnyEvent(self, event):
+        if event.src_path == f'.{os.sep}.gitignore':
+            self._IgnoreService.RefreshPatterns()
+
         if not self._IgnoreService.ShouldBeIgnored(event.src_path):
             self._GitService.AddFiles(event.src_path)
             self._FilesChanged = True
